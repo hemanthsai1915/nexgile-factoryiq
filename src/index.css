@@ -1,0 +1,92 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0c0f;
+  --surface: #111418;
+  --surface2: #181d24;
+  --surface3: #1e2530;
+  --border: #1e2530;
+  --border2: #2a3347;
+  --accent: #00e5a0;
+  --accent-dim: rgba(0,229,160,0.12);
+  --accent2: #0084ff;
+  --accent2-dim: rgba(0,132,255,0.12);
+  --accent3: #ff6b35;
+  --warn: #ffd166;
+  --warn-dim: rgba(255,209,102,0.12);
+  --danger: #ff4757;
+  --danger-dim: rgba(255,71,87,0.12);
+  --text: #e8edf4;
+  --text2: #9aa5bc;
+  --muted: #5a6680;
+  --dim: #2a3347;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Inter', var(--font-sans);
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+  --line-height-base: 1.55;
+  --line-height-tight: 1.4;
+  --line-height-loose: 1.6;
+  --letter-spacing: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.018) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing);
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes pulseRing {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,229,160,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(0,229,160,0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
