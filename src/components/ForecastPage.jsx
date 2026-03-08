@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Bar, Cell,
 } from 'recharts';
-import { Panel, PanelHeader, StatusBadge } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, GlobalFilterModal } from './ui';
 import { forecastData } from '../data';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -19,6 +19,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function ForecastPage() {
+  const [showFilter, setShowFilter] = React.useState(false);
+  const [globalFilters, setGlobalFilters] = React.useState({
+    dateRange: '',
+  });
+
+  const visibleForecast = forecastData.filter(f => !globalFilters.dateRange || f.month.toLowerCase().includes(globalFilters.dateRange.toLowerCase()));
   return (
     <div>
       <div style={{ marginBottom:22 }}>
@@ -39,11 +45,12 @@ export default function ForecastPage() {
 
       <Panel style={{ marginBottom:16 }}>
         <PanelHeader dotColor="#0084ff" title="Forecast vs Actuals — Monthly Units">
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px', marginRight: 8 }}>⚙ Filters</Btn>
           <span style={{ fontSize:10, color:'var(--muted)' }}>Oct 2025 – May 2026</span>
         </PanelHeader>
         <div style={{ padding:'12px 8px 16px 0' }}>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={forecastData} margin={{ top:8, right:20, left:-10, bottom:0 }}>
+            <AreaChart data={visibleForecast} margin={{ top:8, right:20, left:-10, bottom:0 }}>
               <defs>
                 <linearGradient id="gradForecast" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0084ff" stopOpacity={0.2}/>
@@ -111,6 +118,12 @@ export default function ForecastPage() {
           </div>
         </Panel>
       </div>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

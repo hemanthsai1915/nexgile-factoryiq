@@ -3,7 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer,
 } from 'recharts';
-import { Panel, PanelHeader, StatusBadge, Btn, TabBar, Modal, Toast, exportToCsv } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, TabBar, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { spcData } from '../data';
 
 const ncrs = [
@@ -85,6 +85,11 @@ export default function QualityPage() {
     owner: '',
     date: new Date().toISOString().slice(0, 10),
   });
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    line: '',
+    station: '',
+  });
 
   const visibleNcrs = useMemo(() => {
     let items = [...ncrList];
@@ -104,6 +109,12 @@ export default function QualityPage() {
         n.owner.toLowerCase().includes(q)
       );
     }
+    if (globalFilters.line) {
+      items = items.filter(n => n.line.toLowerCase().includes(globalFilters.line.toLowerCase()));
+    }
+    if (globalFilters.station) {
+      items = items.filter(n => n.station.toLowerCase().includes(globalFilters.station.toLowerCase()));
+    }
     if (sort?.key) {
       items.sort((a, b) => {
         const av = (a[sort.key] ?? '').toString().toLowerCase();
@@ -114,7 +125,7 @@ export default function QualityPage() {
       });
     }
     return items;
-  }, [ncrList, severityFilter, statusFilter, search, sort]);
+  }, [ncrList, severityFilter, statusFilter, search, sort, globalFilters]);
 
   function toggleSort(key) {
     setSort(prev => {
@@ -218,6 +229,7 @@ export default function QualityPage() {
               <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s.toUpperCase()}</option>
             ))}
           </select>
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize:10, padding:'3px 10px' }}>⚙ Filters</Btn>
           <Btn onClick={handleExportNcr} style={{ fontSize:10, padding:'3px 10px' }}>↓ Export</Btn>
           <Btn onClick={() => setShowModal(true)} style={{ fontSize:10, padding:'3px 10px' }}>+ New NCR</Btn>
         </PanelHeader>
@@ -509,6 +521,12 @@ export default function QualityPage() {
           </div>
         </form>
       </Modal>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );

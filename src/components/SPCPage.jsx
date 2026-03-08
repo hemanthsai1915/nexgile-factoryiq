@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { Panel, PanelHeader } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
 import { spcData, defectData, heatmapData } from '../data';
 
 const RCOLORS = ['#ff4757', '#ffd166', '#0084ff', '#00e5a0'];
 
 export default function SPCPage() {
   const [hovered, setHovered] = useState(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    station: '',
+  });
+
+  const visibleDefects = defectData.filter(d => !globalFilters.station || d.name.toLowerCase().includes(globalFilters.station.toLowerCase()));
 
   return (
     <div>
@@ -16,7 +22,9 @@ export default function SPCPage() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 20 }}>
         <Panel>
-          <PanelHeader dotColor="#ffd166" title="Cpk Control Chart · Station 7" />
+          <PanelHeader dotColor="#ffd166" title="Cpk Control Chart · Station 7">
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+          </PanelHeader>
           <div style={{ padding: 16 }}>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={spcData} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
@@ -40,11 +48,13 @@ export default function SPCPage() {
           </div>
         </Panel>
         <Panel>
-          <PanelHeader dotColor="#ff4757" title="Defect Distribution" />
+          <PanelHeader dotColor="#ff4757" title="Defect Distribution">
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+          </PanelHeader>
           <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ width: 100, height: 100 }} />
             <div style={{ flex: 1 }}>
-              {defectData.map((d, i) => (
+              {visibleDefects.map((d, i) => (
                 <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: RCOLORS[i] }} />
                   <span style={{ flex: 1 }}>{d.name}</span>
@@ -75,6 +85,12 @@ export default function SPCPage() {
           </div>
         </Panel>
       </div>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

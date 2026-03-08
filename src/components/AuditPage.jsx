@@ -1,8 +1,21 @@
 import React from 'react';
-import { Panel, PanelHeader } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
 import { auditLogs } from '../data';
 
 export default function AuditPage() {
+  const [showFilter, setShowFilter] = React.useState(false);
+  const [globalFilters, setGlobalFilters] = React.useState({
+    user: '',
+    action: '',
+  });
+
+  const visibleLogs = auditLogs.filter(a => {
+    let match = true;
+    if (globalFilters.user && !a.user.toLowerCase().includes(globalFilters.user.toLowerCase())) match = false;
+    if (globalFilters.action && !a.action.toLowerCase().includes(globalFilters.action.toLowerCase())) match = false;
+    return match;
+  });
+
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -10,9 +23,11 @@ export default function AuditPage() {
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>Full audit trail for portal actions, document changes, approvals</div>
       </div>
       <Panel>
-        <PanelHeader dotColor="#5a6680" title="Recent Activity" />
+        <PanelHeader dotColor="#5a6680" title="Recent Activity">
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+        </PanelHeader>
         <div style={{ padding: 0 }}>
-          {auditLogs.map(a => (
+          {visibleLogs.map(a => (
             <div key={a.id}
               style={{
                 display: 'flex', alignItems: 'center', gap: 16,
@@ -29,6 +44,12 @@ export default function AuditPage() {
           ))}
         </div>
       </Panel>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

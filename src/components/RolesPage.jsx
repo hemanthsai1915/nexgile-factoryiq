@@ -1,8 +1,15 @@
 import React from 'react';
-import { Panel, PanelHeader } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
 import { ROLES, ROLE_MODULES } from '../data/users';
 
 export default function RolesPage() {
+  const [showFilter, setShowFilter] = React.useState(false);
+  const [globalFilters, setGlobalFilters] = React.useState({
+    role: '',
+  });
+
+  const visibleRoles = ROLES.filter(r => !globalFilters.role || r.label.toLowerCase().includes(globalFilters.role.toLowerCase()));
+
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -10,7 +17,9 @@ export default function RolesPage() {
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>Role-based views, permissions, and access management</div>
       </div>
       <Panel>
-        <PanelHeader dotColor="#5a6680" title="Roles & Module Access" />
+        <PanelHeader dotColor="#5a6680" title="Roles & Module Access">
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+        </PanelHeader>
         <div style={{ padding: 16 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -20,7 +29,7 @@ export default function RolesPage() {
               </tr>
             </thead>
             <tbody>
-              {ROLES.map(r => (
+              {visibleRoles.map(r => (
                 <tr key={r.value} onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} style={{ cursor: 'default' }}>
                   <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 500 }}>{r.label}</td>
                   <td style={{ padding: '12px 14px', fontSize: 12, color: 'var(--muted)' }}>
@@ -32,6 +41,12 @@ export default function RolesPage() {
           </table>
         </div>
       </Panel>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

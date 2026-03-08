@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { Panel, PanelHeader, Pill, Sparkline } from './ui';
+import { Panel, PanelHeader, Pill, Sparkline, Btn, GlobalFilterModal } from './ui';
 import { productionData, linePerformance } from '../data';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -14,6 +14,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function ProductionPage() {
+  const [showFilter, setShowFilter] = React.useState(false);
+  const [globalFilters, setGlobalFilters] = React.useState({
+    line: '',
+  });
+
+  const visiblePerformance = linePerformance.filter(l => !globalFilters.line || l.name.toLowerCase().includes(globalFilters.line.toLowerCase()));
+
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -22,6 +29,7 @@ export default function ProductionPage() {
       </div>
       <Panel style={{ marginBottom: 20 }}>
         <PanelHeader dotColor="#0084ff" title="Output vs Plan · Week 10">
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px', marginRight: 8 }}>⚙ Filters</Btn>
           <Pill active>Daily</Pill><Pill>Weekly</Pill>
         </PanelHeader>
         <div style={{ padding: 16 }}>
@@ -50,9 +58,11 @@ export default function ProductionPage() {
         </div>
       </Panel>
       <Panel>
-        <PanelHeader dotColor="#00e5a0" title="Line OEE" />
+        <PanelHeader dotColor="#00e5a0" title="Line OEE">
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+        </PanelHeader>
         <div style={{ padding: 16 }}>
-          {linePerformance.map(l => (
+          {visiblePerformance.map(l => (
             <div key={l.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
               <div style={{ width: 120, fontSize: 13, color: 'var(--muted)' }}>{l.name}</div>
               <Sparkline data={l.trend} color={l.color} width={120} />
@@ -61,6 +71,12 @@ export default function ProductionPage() {
           ))}
         </div>
       </Panel>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, Btn, Toast, exportToCsv } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { suppliers } from '../data';
 import { supplyChainOrders, shipments } from '../data/mockData';
 
@@ -13,6 +13,11 @@ export default function SupplyPage() {
   const [shipSort, setShipSort] = useState({ key: 'id', direction: 'asc' });
 
   const [toast, setToast] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    supplier: '',
+    program: '',
+  });
 
   const poStatusOptions = ['All', 'Pending', 'Confirmed', 'Shipped', 'In Transit', 'Received'];
   const shipStatusOptions = ['All', 'Pending', 'In Transit', 'Delivered', 'Cleared'];
@@ -30,6 +35,9 @@ export default function SupplyPage() {
         o.status.toLowerCase().includes(q)
       );
     }
+    if (globalFilters.supplier) {
+      items = items.filter(o => o.supplier.toLowerCase().includes(globalFilters.supplier.toLowerCase()));
+    }
     if (poSort?.key) {
       items.sort((a, b) => {
         const avRaw = typeof poSort.key === 'string' ? a[poSort.key] : a.id;
@@ -42,7 +50,7 @@ export default function SupplyPage() {
       });
     }
     return items;
-  }, [poStatus, poSearch, poSort]);
+  }, [poStatus, poSearch, poSort, globalFilters]);
 
   const visibleShipments = useMemo(() => {
     let items = [...shipments];
@@ -58,6 +66,9 @@ export default function SupplyPage() {
         s.status.toLowerCase().includes(q)
       );
     }
+    if (globalFilters.program) {
+      items = items.filter(s => s.program.toLowerCase().includes(globalFilters.program.toLowerCase()));
+    }
     if (shipSort?.key) {
       items.sort((a, b) => {
         const av = (a[shipSort.key] ?? '').toString().toLowerCase();
@@ -68,7 +79,7 @@ export default function SupplyPage() {
       });
     }
     return items;
-  }, [shipStatus, shipSearch, shipSort]);
+  }, [shipStatus, shipSearch, shipSort, globalFilters]);
 
   function togglePoSort(key) {
     setPoSort(prev => {
@@ -139,6 +150,7 @@ export default function SupplyPage() {
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
             <Btn onClick={handleExportPOs} style={{ fontSize: 11, padding: '4px 10px' }}>↓ Export</Btn>
           </PanelHeader>
           <div style={{ padding: 16 }}>
@@ -250,6 +262,7 @@ export default function SupplyPage() {
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
             <Btn onClick={handleExportShipments} style={{ fontSize: 11, padding: '4px 10px' }}>↓ Export</Btn>
           </PanelHeader>
           <div style={{ padding: 16 }}>
@@ -321,6 +334,12 @@ export default function SupplyPage() {
           </div>
         </Panel>
       </div>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );

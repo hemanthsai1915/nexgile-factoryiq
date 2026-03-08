@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, Btn, Modal, Toast, exportToCsv } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { documents as baseDocuments } from '../data';
 
 const badgeMap = { green: 'green', yellow: 'yellow', red: 'red', blue: 'blue' };
@@ -31,6 +31,11 @@ export default function DocumentsPage() {
     uploadDate: '',
     status: 'Draft',
   });
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    type: '',
+    owner: '',
+  });
   const filters = ['All', 'Approved', 'Pending', 'Draft', 'Review', 'Expiring'];
 
   const visibleDocs = useMemo(() => {
@@ -49,6 +54,12 @@ export default function DocumentsPage() {
         (d.meta || '').toLowerCase().includes(q)
       );
     }
+    if (globalFilters.type) {
+      items = items.filter(d => (d.type || '').toLowerCase().includes(globalFilters.type.toLowerCase()));
+    }
+    if (globalFilters.owner) {
+      items = items.filter(d => (d.owner || '').toLowerCase().includes(globalFilters.owner.toLowerCase()));
+    }
     if (sort?.key) {
       items.sort((a, b) => {
         const av = (a[sort.key] || '').toString().toLowerCase();
@@ -59,7 +70,7 @@ export default function DocumentsPage() {
       });
     }
     return items;
-  }, [docs, filter, search, sort]);
+  }, [docs, filter, search, sort, globalFilters]);
 
   function toggleSort(key) {
     setSort(prev => {
@@ -163,6 +174,7 @@ export default function DocumentsPage() {
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>Versioned documents, approval workflows, engineering viewers</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setShowFilter(true)}>⚙ Filters</Btn>
           <Btn onClick={handleUpload}>↑ Upload</Btn>
           <Btn onClick={handleExport}>↓ Export</Btn>
           <Btn primary onClick={() => setShowModal(true)}>+ New Document</Btn>
@@ -396,6 +408,12 @@ export default function DocumentsPage() {
           </div>
         </form>
       </Modal>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );

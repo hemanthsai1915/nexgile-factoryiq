@@ -1,5 +1,5 @@
 import React from 'react';
-import { Panel, PanelHeader, Sparkline } from './ui';
+import { Panel, PanelHeader, Sparkline, Btn, GlobalFilterModal } from './ui';
 import { linePerformance } from '../data';
 
 export default function CapacityPage() {
@@ -9,6 +9,12 @@ export default function CapacityPage() {
     { site: 'Chennai', lines: 3, util: 91, trend: [85, 88, 90, 89, 91, 92, 91] },
     { site: 'Bangalore', lines: 2, util: 68, trend: [62, 65, 70, 66, 68, 69, 68] },
   ];
+  const [showFilter, setShowFilter] = React.useState(false);
+  const [globalFilters, setGlobalFilters] = React.useState({
+    site: '',
+  });
+
+  const visibleCapacity = capacityData.filter(c => !globalFilters.site || c.site.toLowerCase().includes(globalFilters.site.toLowerCase()));
 
   return (
     <div>
@@ -18,9 +24,11 @@ export default function CapacityPage() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <Panel>
-          <PanelHeader dotColor="#ffd166" title="Site Capacity Utilization" />
+          <PanelHeader dotColor="#ffd166" title="Site Capacity Utilization">
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+          </PanelHeader>
           <div style={{ padding: 16 }}>
-            {capacityData.map(c => (
+            {visibleCapacity.map(c => (
               <div key={c.site} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ width: 90, fontSize: 13 }}>{c.site}</div>
                 <Sparkline data={c.trend} color={c.util >= 85 ? '#00e5a0' : c.util >= 70 ? '#ffd166' : '#ff4757'} width={120} />
@@ -31,7 +39,9 @@ export default function CapacityPage() {
           </div>
         </Panel>
         <Panel>
-          <PanelHeader dotColor="#00e5a0" title="Line OEE" />
+          <PanelHeader dotColor="#00e5a0" title="Line OEE">
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+          </PanelHeader>
           <div style={{ padding: 16 }}>
             {linePerformance.map(l => (
               <div key={l.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
@@ -43,6 +53,12 @@ export default function CapacityPage() {
           </div>
         </Panel>
       </div>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
     </div>
   );
 }

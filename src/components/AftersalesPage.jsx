@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, Btn, Modal, Toast, exportToCsv } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { rmaList as baseRmaList } from '../data';
 
 const badgeMap = { red: 'red', yellow: 'yellow', blue: 'blue', green: 'green' };
@@ -29,6 +29,10 @@ export default function AftersalesPage() {
     stage: 'Diagnosis',
     stageBadge: 'red',
   });
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    product: '',
+  });
 
   const stages = ['All', 'Diagnosis', 'Triage', 'Repair', 'Closed'];
 
@@ -45,6 +49,9 @@ export default function AftersalesPage() {
         r.reason.toLowerCase().includes(q)
       );
     }
+    if (globalFilters.product) {
+      items = items.filter(r => r.product.toLowerCase().includes(globalFilters.product.toLowerCase()));
+    }
     if (sort?.key) {
       items.sort((a, b) => {
         const av = (a[sort.key] || '').toString().toLowerCase();
@@ -55,7 +62,7 @@ export default function AftersalesPage() {
       });
     }
     return items;
-  }, [rmas, stageFilter, search, sort]);
+  }, [rmas, stageFilter, search, sort, globalFilters]);
 
   function toggleSort(key) {
     setSort(prev => {
@@ -129,6 +136,7 @@ export default function AftersalesPage() {
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>Self-service RMA intake, repair diagnostics, warranty claims, spare parts</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Btn onClick={() => setShowFilter(true)}>⚙ Filters</Btn>
           <Btn onClick={handleExport}>↓ Export</Btn>
           <Btn primary onClick={() => setShowModal(true)}>+ New RMA</Btn>
         </div>
@@ -316,6 +324,12 @@ export default function AftersalesPage() {
           </div>
         </form>
       </Modal>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );

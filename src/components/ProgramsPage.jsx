@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, ProgressBar, Pill, Btn, Modal, Toast, exportToCsv } from './ui';
+import { Panel, PanelHeader, StatusBadge, ProgressBar, Pill, Btn, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { programs, ganttItems } from '../data';
 
 const statusMap = { 'on-track': { color: 'green', label: 'On Track' }, 'at-risk': { color: 'yellow', label: 'At Risk' }, 'in-design': { color: 'blue', label: 'In Design' }, 'delayed': { color: 'red', label: 'Delayed' } };
@@ -32,6 +32,11 @@ export default function ProgramsPage() {
     site: '',
     status: 'on-track',
   });
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    site: '',
+    owner: '',
+  });
   const phases = ['All', 'R&D', 'NPI', 'Production'];
 
   const visiblePrograms = useMemo(() => {
@@ -48,6 +53,12 @@ export default function ProgramsPage() {
         p.site.toLowerCase().includes(q)
       );
     }
+    if (globalFilters.site) {
+      items = items.filter(p => p.site.toLowerCase().includes(globalFilters.site.toLowerCase()));
+    }
+    if (globalFilters.owner) {
+      items = items.filter(p => p.owner.toLowerCase().includes(globalFilters.owner.toLowerCase()));
+    }
     if (sort?.key) {
       items.sort((a, b) => {
         const av = (a[sort.key] ?? '').toString().toLowerCase();
@@ -58,7 +69,7 @@ export default function ProgramsPage() {
       });
     }
     return items;
-  }, [progList, filter, search, sort]);
+  }, [progList, filter, search, sort, globalFilters]);
 
   function toggleSort(key) {
     setSort(prev => {
@@ -116,6 +127,7 @@ export default function ProgramsPage() {
       <Panel style={{ marginBottom: 20 }}>
         <PanelHeader dotColor="#00e5a0" title="Programs">
           {phases.map(p => <Pill key={p} active={filter === p} onClick={() => setFilter(p)}>{p}</Pill>)}
+          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
           <Btn onClick={handleExport} style={{ fontSize: 11, padding: '4px 10px' }}>↓ Export</Btn>
           <Btn primary onClick={() => setShowModal(true)} style={{ fontSize: 11, padding: '4px 10px' }}>+ New Program</Btn>
         </PanelHeader>
@@ -249,6 +261,12 @@ export default function ProgramsPage() {
           </div>
         </form>
       </Modal>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => setGlobalFilters(f)} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );

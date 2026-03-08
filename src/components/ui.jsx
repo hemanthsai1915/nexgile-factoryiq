@@ -309,3 +309,43 @@ export function exportToCsv(filename, rows, columns) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+export function GlobalFilterModal({ open, onClose, filters, onApply }) {
+  const [localFilters, setLocalFilters] = React.useState(filters);
+
+  React.useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters, open]);
+
+  const handleChange = (key, val) => setLocalFilters(prev => ({ ...prev, [key]: val }));
+
+  if (!open) return null;
+
+  return (
+    <Modal open={open} title="Global Filters" onClose={onClose} width={400}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {Object.keys(localFilters).map(key => (
+          <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'capitalize' }}>{key}</label>
+            <input 
+              value={localFilters[key]} 
+              onChange={e => handleChange(key, e.target.value)}
+              placeholder={`Filter by ${key}...`}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--surface2)',
+                color: 'var(--text)',
+                fontSize: 13,
+              }}
+            />
+          </div>
+        ))}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+          <Btn onClick={onClose} style={{ padding: '6px 14px' }}>Cancel</Btn>
+          <Btn primary onClick={() => { onApply(localFilters); onClose(); }} style={{ padding: '6px 16px' }}>Apply Filters</Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}

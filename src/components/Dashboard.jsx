@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Panel, PanelHeader, StatusBadge, ProgressBar, Pill,
-  Sparkline, SectionLabel, Divider, TabBar, Btn, Toast, exportToCsv,
+  Sparkline, SectionLabel, Divider, TabBar, Btn, Toast, exportToCsv, GlobalFilterModal
 } from './ui';
 import {
   kpiData, programs, productionData, linePerformance,
@@ -658,6 +658,12 @@ export default function Dashboard({ role }) {
   const widgets = ROLE_DASHBOARD_WIDGETS[role] || ['kpi', 'programs', 'alerts'];
   const hasKpi = widgets.includes('kpi');
   const [toast, setToast] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+  const [globalFilters, setGlobalFilters] = useState({
+    site: '',
+    dateRange: '',
+    category: '',
+  });
 
   function handleExportOverview() {
     exportToCsv('dashboard-kpis.csv', kpiData, [
@@ -669,7 +675,7 @@ export default function Dashboard({ role }) {
   }
 
   function handleFilters() {
-    setToast('Filter presets are simulated in this prototype. In a real deployment, this would open a global filter panel.');
+    setShowFilter(true);
   }
 
   function handleNewProgram() {
@@ -712,6 +718,12 @@ export default function Dashboard({ role }) {
           ) : null;
         })}
       </div>
+      <GlobalFilterModal 
+        open={showFilter} 
+        onClose={() => setShowFilter(false)} 
+        filters={globalFilters} 
+        onApply={(f) => { setGlobalFilters(f); setToast('Filters applied across dashboard (simulated).'); }} 
+      />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );
