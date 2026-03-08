@@ -69,10 +69,13 @@ function KpiStrip() {
 }
 
 // ── Programs Panel ─────────────────────────────────────────────────────────────
-function ProgramsPanel() {
+function ProgramsPanel({ globalFilters }) {
   const [filter, setFilter] = useState('All');
   const phases = ['All','R&D','NPI','Production'];
-  const filtered = filter === 'All' ? programs : programs.filter(p => p.phase === filter);
+  let filtered = filter === 'All' ? programs : programs.filter(p => p.phase === filter);
+  if (globalFilters?.site) {
+    filtered = filtered.filter(p => p.site?.toLowerCase().includes(globalFilters.site.toLowerCase()));
+  }
   return (
     <Panel>
       <PanelHeader dotColor="#00e5a0" title="Program / Project Tracking">
@@ -114,15 +117,19 @@ function ProgramsPanel() {
 }
 
 // ── Alerts Panel ───────────────────────────────────────────────────────────────
-function AlertsPanel() {
+function AlertsPanel({ globalFilters }) {
   const bgMap = { crit:'rgba(255,71,87,0.1)', warn:'rgba(255,209,102,0.1)', info:'rgba(0,132,255,0.1)', ok:'rgba(0,229,160,0.1)' };
+  let filteredAlerts = alerts;
+  if (globalFilters?.site) {
+    filteredAlerts = filteredAlerts.filter(a => a.meta?.toLowerCase().includes(globalFilters.site.toLowerCase()) || a.title?.toLowerCase().includes(globalFilters.site.toLowerCase()));
+  }
   return (
     <Panel>
       <PanelHeader dotColor="#ff4757" title="Active Alerts & NCR Queue">
-        <Pill active>{alerts.length} Open</Pill>
+        <Pill active>{filteredAlerts.length} Open</Pill>
       </PanelHeader>
       <div style={{ padding:'4px 0' }}>
-        {alerts.map(a => (
+        {filteredAlerts.map(a => (
           <div key={a.id} style={{
             display:'flex', alignItems:'flex-start', gap:10,
             padding:'10px 16px', borderBottom:'1px solid rgba(30,37,48,0.5)',
@@ -432,9 +439,13 @@ function HeatmapPanel() {
 }
 
 // ── Documents Panel ────────────────────────────────────────────────────────────
-function DocsPanel() {
+function DocsPanel({ globalFilters }) {
   const badgeMap = { green:'green', yellow:'yellow', red:'red', blue:'blue' };
   const [toast, setToast] = useState('');
+  let filteredDocs = documents;
+  if (globalFilters?.category) {
+    filteredDocs = filteredDocs.filter(d => d.meta?.toLowerCase().includes(globalFilters.category.toLowerCase()) || d.title?.toLowerCase().includes(globalFilters.category.toLowerCase()));
+  }
   return (
     <Panel>
       <PanelHeader dotColor="#0084ff" title="Documents, Collaboration & Knowledge">
@@ -448,7 +459,7 @@ function DocsPanel() {
       <div style={{ padding:'12px 16px' }}>
         <SectionLabel>Recent Documents</SectionLabel>
         <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-          {documents.map(d => (
+          {filteredDocs.map(d => (
             <div key={d.title}
               onMouseEnter={e => e.currentTarget.style.borderColor='rgba(0,132,255,0.4)'}
               onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
@@ -480,7 +491,11 @@ function DocsPanel() {
 }
 
 // ── Compact summary widgets for role-based dashboards ───────────────────────────
-function ProjectsSummary() {
+function ProjectsSummary({ globalFilters }) {
+  let filteredProjects = projects;
+  if (globalFilters?.site) {
+    filteredProjects = filteredProjects.filter(p => p.site?.toLowerCase().includes(globalFilters.site.toLowerCase()));
+  }
   return (
     <Panel>
       <PanelHeader dotColor="#00e5a0" title="My Programs" />
@@ -493,7 +508,7 @@ function ProjectsSummary() {
           </tr>
         </thead>
         <tbody>
-          {projects.slice(0, 5).map(p => {
+          {filteredProjects.slice(0, 5).map(p => {
             const s = statusMap[p.status];
             return (
               <tr key={p.id} style={{ cursor:'pointer' }} onMouseEnter={e => e.currentTarget.style.background='var(--surface2)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
@@ -713,7 +728,7 @@ export default function Dashboard({ role }) {
           const isWide = ['programs', 'production', 'gantt'].includes(w);
           return C ? (
             <div key={w} style={{ minWidth: 0, gridColumn: isWide ? '1 / -1' : undefined }}>
-              <C />
+              <C globalFilters={globalFilters} />
             </div>
           ) : null;
         })}
@@ -722,7 +737,7 @@ export default function Dashboard({ role }) {
         open={showFilter} 
         onClose={() => setShowFilter(false)} 
         filters={globalFilters} 
-        onApply={(f) => { setGlobalFilters(f); setToast('Filters applied across dashboard (simulated).'); }} 
+        onApply={(f) => { setGlobalFilters(f); setToast('Filters applied across dashboard.'); }} 
       />
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
