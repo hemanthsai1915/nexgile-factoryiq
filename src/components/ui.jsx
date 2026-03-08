@@ -309,6 +309,21 @@ export function exportToCsv(filename, rows, columns) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+const COMMON_OPTIONS = {
+  site: ['Hyderabad', 'Pune', 'Chennai', 'Bangalore'],
+  line: ['Line 1', 'Line 2', 'Line 3', 'Line 4'],
+  station: ['SMT-1', 'SMT-2', 'Assembly', 'Test', 'Pack'],
+  owner: ['System', 'Admin', 'Engineer'],
+  type: ['SOP', 'Drawing', 'Spec', 'Report'],
+  product: ['ECU-Pro', 'Sensor-X', 'Motor-Drive'],
+  supplier: ['TechCorp', 'GlobalParts', 'AutoSupply'],
+  program: ['Prj-Alpha', 'Prj-Beta', 'Prj-Gamma'],
+  dateRange: ['Today', 'This Week', 'This Month', 'Q1 2026', 'Q2 2026'],
+  user: ['Alice', 'Bob', 'System'],
+  action: ['Login', 'Update', 'Delete', 'Create'],
+  role: ['admin', 'manager', 'operator', 'viewer']
+};
+
 export function GlobalFilterModal({ open, onClose, filters, onApply }) {
   const [localFilters, setLocalFilters] = React.useState(filters);
 
@@ -326,6 +341,19 @@ export function GlobalFilterModal({ open, onClose, filters, onApply }) {
         {Object.keys(localFilters).map(key => (
           <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'capitalize' }}>{key}</label>
+            {COMMON_OPTIONS[key] && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
+                {COMMON_OPTIONS[key].map(opt => (
+                  <Pill 
+                    key={opt} 
+                    active={localFilters[key]?.toLowerCase() === opt.toLowerCase()} 
+                    onClick={() => handleChange(key, localFilters[key]?.toLowerCase() === opt.toLowerCase() ? '' : opt)}
+                  >
+                    {opt}
+                  </Pill>
+                ))}
+              </div>
+            )}
             <input 
               value={localFilters[key]} 
               onChange={e => handleChange(key, e.target.value)}
