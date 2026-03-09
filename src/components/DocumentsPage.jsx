@@ -146,9 +146,6 @@ export default function DocumentsPage() {
   
   const filters = ['All', 'Approved', 'Pending', 'Draft', 'Review', 'Expiring', 'Archived'];
 
-  const hasGlobalFilters = globalFilters.type || globalFilters.owner;
-  const isFiltered = filter !== 'All' || search || hasGlobalFilters;
-
   const visibleDocs = useMemo(() => {
     let items = [...docs];
     if (filter !== 'All') {
@@ -189,7 +186,7 @@ export default function DocumentsPage() {
       });
     }
     return items;
-  }, [docs, filter, search, sort, globalFilters, docRole, currentUser.name]);
+  }, [docs, filter, search, sort, globalFilters, docRole]);
 
   function handleAction(actionId, doc) {
     if (actionId === 'view') {
