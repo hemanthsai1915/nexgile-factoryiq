@@ -1,5 +1,5 @@
 import React from 'react';
-import { Panel, PanelHeader, Sparkline, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, Sparkline, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { linePerformance } from '../data';
 
 export default function CapacityPage() {
@@ -25,6 +25,7 @@ export default function CapacityPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <Panel>
           <PanelHeader dotColor="#ffd166" title="Site Capacity Utilization">
+            <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ site: '' })} />
             <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
           </PanelHeader>
           <div style={{ padding: 16 }}>
@@ -40,6 +41,7 @@ export default function CapacityPage() {
         </Panel>
         <Panel>
           <PanelHeader dotColor="#00e5a0" title="Line OEE">
+            <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ site: '' })} />
             <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
           </PanelHeader>
           <div style={{ padding: 16 }}>

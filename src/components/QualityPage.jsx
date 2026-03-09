@@ -3,7 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer,
 } from 'recharts';
-import { Panel, PanelHeader, StatusBadge, Btn, TabBar, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, TabBar, Modal, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { spcData } from '../data';
 
 const ncrs = [
@@ -238,8 +238,11 @@ export default function QualityPage() {
         {tab === 'NCR Log' && (
           <>
             <div style={{ padding: '6px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                Showing <strong style={{ color: 'var(--text)' }}>{visibleNcrs.length}</strong> NCR{visibleNcrs.length === 1 ? '' : 's'}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  Showing <strong style={{ color: 'var(--text)' }}>{visibleNcrs.length}</strong> NCR{visibleNcrs.length === 1 ? '' : 's'}
+                </div>
+                <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ line: '', station: '' })} />
               </div>
               <input
                 type="text"

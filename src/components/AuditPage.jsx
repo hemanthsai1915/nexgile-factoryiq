@@ -1,5 +1,5 @@
 import React from 'react';
-import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { auditLogs } from '../data';
 
 export default function AuditPage() {
@@ -24,6 +24,7 @@ export default function AuditPage() {
       </div>
       <Panel>
         <PanelHeader dotColor="#5a6680" title="Recent Activity">
+          <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ user: '', action: '' })} />
           <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
         </PanelHeader>
         <div style={{ padding: 0 }}>

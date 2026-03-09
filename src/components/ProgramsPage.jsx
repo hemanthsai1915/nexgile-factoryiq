@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, ProgressBar, Pill, Btn, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, StatusBadge, ProgressBar, Pill, Btn, Modal, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { programs, ganttItems } from '../data';
 
 const statusMap = { 'on-track': { color: 'green', label: 'On Track' }, 'at-risk': { color: 'yellow', label: 'At Risk' }, 'in-design': { color: 'blue', label: 'In Design' }, 'delayed': { color: 'red', label: 'Delayed' } };
@@ -132,8 +132,11 @@ export default function ProgramsPage() {
           <Btn primary onClick={() => setShowModal(true)} style={{ fontSize: 11, padding: '4px 10px' }}>+ New Program</Btn>
         </PanelHeader>
         <div style={{ padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            Showing <strong style={{ color: 'var(--text)' }}>{visiblePrograms.length}</strong> program{visiblePrograms.length === 1 ? '' : 's'}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              Showing <strong style={{ color: 'var(--text)' }}>{visiblePrograms.length}</strong> program{visiblePrograms.length === 1 ? '' : 's'}
+            </div>
+            <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ site: '', owner: '' })} />
           </div>
           <input
             type="text"

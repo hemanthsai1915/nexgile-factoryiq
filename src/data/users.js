@@ -1,6 +1,7 @@
 // Role-based mock auth - no backend/database. Store selected role in localStorage.
 
 export const ROLES = [
+  { value: 'admin', label: 'System Administrator' },
   { value: 'customer', label: 'Customer' },
   { value: 'engineering', label: 'Engineering' },
   { value: 'supply_chain', label: 'Supply Chain / Procurement' },
@@ -18,6 +19,7 @@ export const ROLES = [
 export const ROLE_LABELS = Object.fromEntries(ROLES.map(r => [r.value, r.label]));
 
 export const ROLE_MODULES = {
+  admin: ['dashboard', 'programs', 'production', 'quality', 'supply', 'aftersales', 'documents', 'spc', 'capacity', 'forecast', 'roles', 'audit'],
   customer: ['dashboard', 'quality', 'documents', 'forecast', 'aftersales'],
   engineering: ['dashboard', 'programs', 'production', 'quality', 'documents', 'spc', 'capacity', 'forecast'],
   supply_chain: ['dashboard', 'supply', 'forecast', 'documents'],
@@ -33,6 +35,7 @@ export const ROLE_MODULES = {
 };
 
 export const ROLE_DASHBOARD_WIDGETS = {
+  admin: ['projects', 'quality_summary', 'shipments', 'rma', 'kpi', 'programs', 'alerts', 'production', 'quality', 'supply', 'gantt', 'heatmap', 'docs', 'forecast_summary', 'orders', 'spc_summary', 'capacity_summary'],
   customer: ['projects', 'quality_summary', 'shipments', 'rma'],
   engineering: ['kpi', 'programs', 'alerts', 'production', 'quality', 'supply', 'gantt', 'rma', 'heatmap', 'docs'],
   supply_chain: ['kpi', 'supply', 'forecast_summary', 'shipments', 'orders'],

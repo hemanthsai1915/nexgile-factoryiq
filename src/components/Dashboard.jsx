@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Panel, PanelHeader, StatusBadge, ProgressBar, Pill,
-  Sparkline, SectionLabel, Divider, TabBar, Btn, Toast, exportToCsv, GlobalFilterModal
+  Sparkline, SectionLabel, Divider, TabBar, Btn, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator
 } from './ui';
 import {
   kpiData, programs, productionData, linePerformance,
@@ -708,7 +708,8 @@ export default function Dashboard({ role }) {
             R&D → NPI → Production · Multi-site
           </div>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
+        <div style={{ display:'flex', gap:8, alignItems: 'center' }}>
+          <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ site: '', dateRange: '', category: ''})} />
           <Btn onClick={handleExportOverview}>↓ Export</Btn>
           <Btn onClick={handleFilters}>⚙ Filters</Btn>
           <Btn primary onClick={handleNewProgram}>+ New Program</Btn>

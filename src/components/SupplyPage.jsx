@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Panel, PanelHeader, StatusBadge, Btn, Toast, exportToCsv, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { suppliers } from '../data';
 import { supplyChainOrders, shipments } from '../data/mockData';
 
@@ -155,8 +155,11 @@ export default function SupplyPage() {
           </PanelHeader>
           <div style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                Showing <strong style={{ color: 'var(--text)' }}>{visiblePOs.length}</strong> PO{visiblePOs.length === 1 ? '' : 's'}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  Showing <strong style={{ color: 'var(--text)' }}>{visiblePOs.length}</strong> PO{visiblePOs.length === 1 ? '' : 's'}
+                </div>
+                <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ supplier: '', program: '' })} />
               </div>
               <input
                 type="text"
@@ -267,8 +270,11 @@ export default function SupplyPage() {
           </PanelHeader>
           <div style={{ padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                Showing <strong style={{ color: 'var(--text)' }}>{visibleShipments.length}</strong> shipment{visibleShipments.length === 1 ? '' : 's'}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  Showing <strong style={{ color: 'var(--text)' }}>{visibleShipments.length}</strong> shipment{visibleShipments.length === 1 ? '' : 's'}
+                </div>
+                <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ supplier: '', program: '' })} />
               </div>
               <input
                 type="text"

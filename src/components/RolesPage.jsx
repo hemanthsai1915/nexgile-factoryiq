@@ -1,5 +1,5 @@
 import React from 'react';
-import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { ROLES, ROLE_MODULES } from '../data/users';
 
 export default function RolesPage() {
@@ -18,6 +18,7 @@ export default function RolesPage() {
       </div>
       <Panel>
         <PanelHeader dotColor="#5a6680" title="Roles & Module Access">
+          <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ role: '' })} />
           <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
         </PanelHeader>
         <div style={{ padding: 16 }}>

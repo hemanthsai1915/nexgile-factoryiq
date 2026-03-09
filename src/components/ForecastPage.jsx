@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Bar, Cell,
 } from 'recharts';
-import { Panel, PanelHeader, StatusBadge, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, StatusBadge, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { forecastData } from '../data';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -45,8 +45,11 @@ export default function ForecastPage() {
 
       <Panel style={{ marginBottom:16 }}>
         <PanelHeader dotColor="#0084ff" title="Forecast vs Actuals — Monthly Units">
-          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px', marginRight: 8 }}>⚙ Filters</Btn>
-          <span style={{ fontSize:10, color:'var(--muted)' }}>Oct 2025 – May 2026</span>
+          <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ dateRange: '' })} />
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+            <span style={{ fontSize:10, color:'var(--muted)' }}>Oct 2025 – May 2026</span>
+          </div>
         </PanelHeader>
         <div style={{ padding:'12px 8px 16px 0' }}>
           <ResponsiveContainer width="100%" height={220}>

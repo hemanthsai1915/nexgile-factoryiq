@@ -377,3 +377,22 @@ export function GlobalFilterModal({ open, onClose, filters, onApply }) {
     </Modal>
   );
 }
+
+export function ActiveFiltersIndicator({ filters, onClear }) {
+  if (!filters) return null;
+  const activeCount = Object.values(filters).filter(v => v !== '').length;
+  if (activeCount === 0) return null;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ padding: '4px 8px', background: 'rgba(0,132,255,0.1)', color: '#0084ff', borderRadius: 4, fontSize: 12 }}>
+        Filters Applied ({activeCount})
+      </div>
+      <button 
+        onClick={onClear}
+        style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}>
+        Clear Filters
+      </button>
+    </div>
+  );
+}

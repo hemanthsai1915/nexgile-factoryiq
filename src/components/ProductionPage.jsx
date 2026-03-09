@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { Panel, PanelHeader, Pill, Sparkline, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, Pill, Sparkline, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { productionData, linePerformance } from '../data';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -29,8 +29,11 @@ export default function ProductionPage() {
       </div>
       <Panel style={{ marginBottom: 20 }}>
         <PanelHeader dotColor="#0084ff" title="Output vs Plan · Week 10">
-          <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px', marginRight: 8 }}>⚙ Filters</Btn>
-          <Pill active>Daily</Pill><Pill>Weekly</Pill>
+          <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ line: '' })} />
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
+            <Pill active>Daily</Pill><Pill>Weekly</Pill>
+          </div>
         </PanelHeader>
         <div style={{ padding: 16 }}>
           <ResponsiveContainer width="100%" height={180}>

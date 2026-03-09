@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { Panel, PanelHeader, Btn, GlobalFilterModal } from './ui';
+import { Panel, PanelHeader, Btn, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { spcData, defectData, heatmapData } from '../data';
 
 const RCOLORS = ['#ff4757', '#ffd166', '#0084ff', '#00e5a0'];
@@ -23,6 +23,7 @@ export default function SPCPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 20 }}>
         <Panel>
           <PanelHeader dotColor="#ffd166" title="Cpk Control Chart · Station 7">
+            <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ station: '' })} />
             <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
           </PanelHeader>
           <div style={{ padding: 16 }}>
@@ -49,6 +50,7 @@ export default function SPCPage() {
         </Panel>
         <Panel>
           <PanelHeader dotColor="#ff4757" title="Defect Distribution">
+            <ActiveFiltersIndicator filters={globalFilters} onClear={() => setGlobalFilters({ station: '' })} />
             <Btn onClick={() => setShowFilter(true)} style={{ fontSize: 11, padding: '4px 10px' }}>⚙ Filters</Btn>
           </PanelHeader>
           <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
