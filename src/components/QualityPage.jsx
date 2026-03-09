@@ -5,6 +5,86 @@ import {
 } from 'recharts';
 import { Panel, PanelHeader, StatusBadge, Btn, TabBar, Modal, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { spcData } from '../data';
+import { getStoredUser } from '../data/users';
+
+function ActionsDropdown({ item, currentUserRole, currentUserName, onAction }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef();
+  
+  React.useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isOwner = item.owner === currentUserName;
+  const isAdmin = currentUserRole === 'admin';
+  const canEdit = isAdmin || isOwner;
+  const canDelete = isAdmin || isOwner;
+
+  if (!canEdit && !canDelete) return null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          background: 'transparent', border: 'none', color: 'var(--muted)',
+          cursor: 'pointer', padding: '4px 8px', fontSize: 16, borderRadius: 4,
+          transition: 'all 0.15s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+        onMouseLeave={e => e.currentTarget.style.color = open ? 'var(--text)' : 'var(--muted)'}
+      >
+        &#8942;
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: '4px', minWidth: 120, zIndex: 50,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('edit', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: 'var(--text)',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('delete', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: '#ff4757',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ncrs = [
   { id:'NCR-0443', title:'Solder void >15% on PCB Rev C', line:'Line 3', station:'AOI-7', severity:'Critical', status:'open',    rca:'5-Why',    owner:'M. Chen',  date:'2026-03-06' },
@@ -55,6 +135,7 @@ function SpcChart() {
 }
 
 export default function QualityPage() {
+  const [currentUser] = useState(() => getStoredUser() || { role: 'customer', name: 'Guest' });
   const [tab, setTab] = useState('NCR Log');
   const [ncrList, setNcrList] = useState(() => {
     try {
@@ -152,7 +233,7 @@ export default function QualityPage() {
       severity: form.severity,
       status: form.status,
       rca: form.rca.trim() || '5-Why',
-      owner: form.owner.trim() || 'Unassigned',
+      owner: form.owner.trim() || currentUser.name || 'Unassigned',
       date: form.date || new Date().toISOString().slice(0, 10),
     };
     setNcrList(prev => [newNcr, ...prev]);
@@ -169,6 +250,37 @@ export default function QualityPage() {
       date: new Date().toISOString().slice(0, 10),
     });
     setToast('NCR created (demo only – no backend).');
+  }
+
+  const [editModal, setEditModal] = useState({ open: false, item: null, formData: {} });
+
+  function handleAction(actionId, item) {
+    if (actionId === 'edit') {
+      setEditModal({ open: true, item, formData: { ...item } });
+    } else if (actionId === 'delete') {
+      if (window.confirm(`Are you sure you want to permanently delete NCR "${item.title}"?`)) {
+        setNcrList(prev => prev.filter(n => n.id !== item.id));
+        setToast(`NCR ${item.id} deleted successfully.`);
+      }
+    }
+  }
+
+  function handleEditFormChange(e) {
+    const { name, value } = e.target;
+    setEditModal(prev => ({ ...prev, formData: { ...prev.formData, [name]: value } }));
+  }
+
+  function handleSaveEdit(e) {
+    e.preventDefault();
+    if (!editModal.item) return;
+    setNcrList(prev => prev.map(n => {
+      if (n.id === editModal.item.id) {
+        return { ...n, ...editModal.formData };
+      }
+      return n;
+    }));
+    setToast(`Updated NCR ${editModal.item.id}`);
+    setEditModal({ open: false, item: null, formData: {} });
   }
 
   function handleExportNcr() {
@@ -272,14 +384,15 @@ export default function QualityPage() {
                     { key: 'status', label: 'Status' },
                     { key: 'rca', label: 'RCA' },
                     { key: 'owner', label: 'Owner' },
+                    { key: 'actions', label: 'Actions' },
                   ].map(col => (
                     <th
                       key={col.key}
-                      onClick={() => toggleSort(col.key)}
-                      style={{ textAlign:'left', fontSize:9, letterSpacing:'0.02em', textTransform:'uppercase', color:'var(--muted)', padding:'7px 14px', borderBottom:'1px solid var(--border)', fontWeight:400, cursor: 'pointer' }}
+                      onClick={() => col.key !== 'actions' && toggleSort(col.key)}
+                      style={{ textAlign: col.key === 'actions' ? 'center' : 'left', fontSize:9, letterSpacing:'0.02em', textTransform:'uppercase', color:'var(--muted)', padding:'7px 14px', borderBottom:'1px solid var(--border)', fontWeight:400, cursor: col.key === 'actions' ? 'default' : 'pointer' }}
                     >
                       {col.label}
-                      {sort.key === col.key && (
+                      {sort.key === col.key && col.key !== 'actions' && (
                         <span style={{ marginLeft: 4 }}>{sort.direction === 'asc' ? '▲' : '▼'}</span>
                       )}
                     </th>
@@ -301,6 +414,9 @@ export default function QualityPage() {
                     <td style={{ padding:'9px 14px' }}><StatusBadge color={statusMap2[n.status]}>{n.status.toUpperCase()}</StatusBadge></td>
                     <td style={{ padding:'9px 14px', fontSize:11, color:'var(--muted)' }}>{n.rca}</td>
                     <td style={{ padding:'9px 14px', fontSize:11, color:'var(--muted)' }}>{n.owner}</td>
+                    <td style={{ padding:'9px 14px', textAlign: 'center' }}>
+                      <ActionsDropdown item={n} currentUserRole={currentUser.role} currentUserName={currentUser.name} onAction={handleAction} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -523,6 +639,68 @@ export default function QualityPage() {
             <Btn primary type="submit" style={{ fontSize: 11, padding: '5px 14px' }}>Create NCR</Btn>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit NCR Modal */}
+      <Modal open={editModal.open} title="Edit NCR" onClose={() => setEditModal(prev => ({ ...prev, open: false }))}>
+        {editModal.item && (
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>NCR ID</label>
+                <input name="id" value={editModal.formData.id} disabled style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: 12 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Owner</label>
+                <input name="owner" value={editModal.formData.owner} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Issue summary</label>
+              <input name="title" value={editModal.formData.title} onChange={handleEditFormChange} required style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Line</label>
+                <input name="line" value={editModal.formData.line} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Station</label>
+                <input name="station" value={editModal.formData.station} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Severity</label>
+                <select name="severity" value={editModal.formData.severity} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }}>
+                  <option value="Critical">Critical</option>
+                  <option value="Major">Major</option>
+                  <option value="Minor">Minor</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Status</label>
+                <select name="status" value={editModal.formData.status} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }}>
+                  <option value="open">OPEN</option>
+                  <option value="capa">CAPA</option>
+                  <option value="closed">CLOSED</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>RCA Method</label>
+              <input name="rca" value={editModal.formData.rca} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Date</label>
+              <input type="date" name="date" value={editModal.formData.date} onChange={handleEditFormChange} style={{ padding: '7px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12 }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+              <Btn onClick={() => setEditModal(prev => ({ ...prev, open: false }))} style={{ fontSize: 11, padding: '5px 12px' }}>Cancel</Btn>
+              <Btn primary type="submit" style={{ fontSize: 11, padding: '5px 14px' }}>Save Changes</Btn>
+            </div>
+          </form>
+        )}
       </Modal>
       <GlobalFilterModal 
         open={showFilter} 

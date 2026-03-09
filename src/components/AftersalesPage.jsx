@@ -1,10 +1,91 @@
 import React, { useState, useMemo } from 'react';
 import { Panel, PanelHeader, StatusBadge, Btn, Modal, Toast, exportToCsv, GlobalFilterModal } from './ui';
 import { rmaList as baseRmaList } from '../data';
+import { getStoredUser } from '../data/users';
 
 const badgeMap = { red: 'red', yellow: 'yellow', blue: 'blue', green: 'green' };
 
+function ActionsDropdown({ item, currentUserRole, currentUserName, onAction }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef();
+  
+  React.useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isOwner = item.owner === currentUserName;
+  const isAdmin = currentUserRole === 'admin';
+  const canEdit = isAdmin || isOwner;
+  const canDelete = isAdmin || isOwner;
+
+  if (!canEdit && !canDelete) return null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          background: 'transparent', border: 'none', color: 'var(--muted)',
+          cursor: 'pointer', padding: '4px 8px', fontSize: 16, borderRadius: 4,
+          transition: 'all 0.15s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+        onMouseLeave={e => e.currentTarget.style.color = open ? 'var(--text)' : 'var(--muted)'}
+      >
+        &#8942;
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: '4px', minWidth: 120, zIndex: 50,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('edit', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: 'var(--text)',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('delete', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: '#ff4757',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AftersalesPage() {
+  const [currentUser] = useState(() => getStoredUser() || { role: 'customer', name: 'Guest' });
   const [rmas, setRmas] = useState(() => {
     try {
       const saved = localStorage.getItem('factoryiq_rmas');
@@ -100,6 +181,7 @@ export default function AftersalesPage() {
       reason: form.reason.trim() || 'Not specified',
       stage: form.stage,
       stageBadge: form.stageBadge,
+      owner: currentUser.name || 'Unassigned',
     };
     setRmas(prev => [newRma, ...prev]);
     setShowModal(false);
@@ -113,6 +195,41 @@ export default function AftersalesPage() {
     setToast('RMA created (demo only – no backend).');
   }
 
+  const [editModal, setEditModal] = useState({ open: false, item: null, formData: {} });
+
+  function handleAction(actionId, item) {
+    if (actionId === 'edit') {
+      setEditModal({ open: true, item, formData: { ...item } });
+    } else if (actionId === 'delete') {
+      if (window.confirm(`Are you sure you want to permanently delete RMA "${item.id}"?`)) {
+        setRmas(prev => prev.filter(r => r.id !== item.id));
+        setToast(`RMA ${item.id} deleted successfully.`);
+      }
+    }
+  }
+
+  function handleEditFormChange(e) {
+    const { name, value } = e.target;
+    setEditModal(prev => ({ ...prev, formData: { ...prev.formData, [name]: value } }));
+  }
+
+  function handleSaveEdit(e) {
+    e.preventDefault();
+    if (!editModal.item) return;
+    setRmas(prev => prev.map(r => {
+      if (r.id === editModal.item.id) {
+        return {
+          ...r,
+          ...editModal.formData,
+          stageBadge: editModal.formData.stage === 'Closed' ? 'green' : editModal.formData.stage === 'Repair' ? 'blue' : editModal.formData.stage === 'Triage' ? 'yellow' : 'red',
+        };
+      }
+      return r;
+    }));
+    setToast(`Updated RMA ${editModal.item.id}`);
+    setEditModal({ open: false, item: null, formData: {} });
+  }
+
   function handleExport() {
     if (!visibleRmas.length) return;
     exportToCsv(
@@ -123,6 +240,7 @@ export default function AftersalesPage() {
         { header: 'Product', accessor: 'product' },
         { header: 'Reason', accessor: 'reason' },
         { header: 'Stage', accessor: 'stage' },
+        { header: 'Owner', accessor: 'owner' },
       ]
     );
     setToast(`Exported ${visibleRmas.length} RMA case${visibleRmas.length === 1 ? '' : 's'} as CSV`);
@@ -200,22 +318,24 @@ export default function AftersalesPage() {
                 { key: 'product', label: 'Product' },
                 { key: 'reason', label: 'Reason' },
                 { key: 'stage', label: 'Stage' },
+                { key: 'owner', label: 'Owner' },
+                { key: 'actions', label: 'Actions' },
               ].map(col => (
                 <th
                   key={col.key}
-                  onClick={() => toggleSort(col.key)}
+                  onClick={() => col.key !== 'actions' && toggleSort(col.key)}
                   style={{
-                    textAlign: 'left',
+                    textAlign: col.key === 'actions' ? 'center' : 'left',
                     fontSize: 11,
                     textTransform: 'uppercase',
                     color: 'var(--muted)',
                     padding: '10px 14px',
                     borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer',
+                    cursor: col.key === 'actions' ? 'default' : 'pointer',
                   }}
                 >
                   {col.label}
-                  {sort.key === col.key && (
+                  {sort.key === col.key && col.key !== 'actions' && (
                     <span style={{ marginLeft: 4 }}>{sort.direction === 'asc' ? '▲' : '▼'}</span>
                   )}
                 </th>
@@ -229,6 +349,10 @@ export default function AftersalesPage() {
                 <td style={{ padding: '12px 14px', fontSize: 13 }}>{r.product}</td>
                 <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--muted)' }}>{r.reason}</td>
                 <td style={{ padding: '12px 14px' }}><StatusBadge color={badgeMap[r.stageBadge]}>{r.stage}</StatusBadge></td>
+                <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--muted)' }}>{r.owner || '—'}</td>
+                <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                  <ActionsDropdown item={r} currentUserRole={currentUser.role} currentUserName={currentUser.name} onAction={handleAction} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -323,6 +447,47 @@ export default function AftersalesPage() {
             <Btn primary style={{ padding: '6px 16px' }} type="submit">Create RMA</Btn>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit RMA Modal */}
+      <Modal open={editModal.open} title="Edit RMA" onClose={() => setEditModal(prev => ({ ...prev, open: false }))}>
+        {editModal.item && (
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>RMA ID</label>
+                <input name="id" value={editModal.formData.id} disabled style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: 13 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Product</label>
+                <input name="product" value={editModal.formData.product} onChange={handleEditFormChange} required style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Stage</label>
+                <select name="stage" value={editModal.formData.stage} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }}>
+                  <option value="Diagnosis">Diagnosis</option>
+                  <option value="Triage">Triage</option>
+                  <option value="Repair">Repair</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Owner</label>
+                <input name="owner" value={editModal.formData.owner} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 12, color: 'var(--muted)' }}>Reason</label>
+              <textarea name="reason" value={editModal.formData.reason} onChange={handleEditFormChange} rows={3} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13, resize: 'vertical' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+              <Btn onClick={() => setEditModal(prev => ({ ...prev, open: false }))} style={{ padding: '6px 14px' }}>Cancel</Btn>
+              <Btn primary style={{ padding: '6px 16px' }} type="submit">Save Changes</Btn>
+            </div>
+          </form>
+        )}
       </Modal>
       <GlobalFilterModal 
         open={showFilter} 

@@ -1,11 +1,92 @@
 import React, { useState, useMemo } from 'react';
 import { Panel, PanelHeader, StatusBadge, ProgressBar, Pill, Btn, Modal, Toast, exportToCsv, GlobalFilterModal, ActiveFiltersIndicator } from './ui';
 import { programs, ganttItems } from '../data';
+import { getStoredUser } from '../data/users';
 
 const statusMap = { 'on-track': { color: 'green', label: 'On Track' }, 'at-risk': { color: 'yellow', label: 'At Risk' }, 'in-design': { color: 'blue', label: 'In Design' }, 'delayed': { color: 'red', label: 'Delayed' } };
 const progressColor = { 'on-track': '#00e5a0', 'at-risk': '#ffd166', 'in-design': '#0084ff', 'delayed': '#ff4757' };
 
+function ActionsDropdown({ item, currentUserRole, currentUserName, onAction }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef();
+  
+  React.useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isOwner = item.owner === currentUserName;
+  const isAdmin = currentUserRole === 'admin';
+  const canEdit = isAdmin || isOwner;
+  const canDelete = isAdmin || isOwner;
+
+  if (!canEdit && !canDelete) return null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          background: 'transparent', border: 'none', color: 'var(--muted)',
+          cursor: 'pointer', padding: '4px 8px', fontSize: 16, borderRadius: 4,
+          transition: 'all 0.15s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+        onMouseLeave={e => e.currentTarget.style.color = open ? 'var(--text)' : 'var(--muted)'}
+      >
+        &#8942;
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: '4px', minWidth: 120, zIndex: 50,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('edit', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: 'var(--text)',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onAction('delete', item); }}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: '8px 12px', textAlign: 'left',
+                fontSize: 12, color: '#ff4757',
+                cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProgramsPage() {
+  const [currentUser] = useState(() => getStoredUser() || { role: 'customer', name: 'Guest' });
   const [progList, setProgList] = useState(() => {
     try {
       const saved = localStorage.getItem('factoryiq_programs');
@@ -92,7 +173,7 @@ export default function ProgramsPage() {
       name: form.name.trim() || 'New Program',
       phase: form.phase,
       progress: 0,
-      owner: form.owner.trim() || 'Unassigned',
+      owner: form.owner.trim() || currentUser.name || 'Unassigned',
       status: form.status,
       site: form.site.trim() || 'HQ',
     };
@@ -102,6 +183,37 @@ export default function ProgramsPage() {
       id: '', name: '', phase: 'R&D', owner: '', site: '', status: 'on-track'
     });
     setToast('Program created (demo only – no backend).');
+  }
+
+  const [editModal, setEditModal] = useState({ open: false, item: null, formData: {} });
+
+  function handleAction(actionId, item) {
+    if (actionId === 'edit') {
+      setEditModal({ open: true, item, formData: { ...item } });
+    } else if (actionId === 'delete') {
+      if (window.confirm(`Are you sure you want to permanently delete program "${item.name}"?`)) {
+        setProgList(prev => prev.filter(p => p.id !== item.id));
+        setToast(`Program ${item.id} deleted successfully.`);
+      }
+    }
+  }
+
+  function handleEditFormChange(e) {
+    const { name, value } = e.target;
+    setEditModal(prev => ({ ...prev, formData: { ...prev.formData, [name]: value } }));
+  }
+
+  function handleSaveEdit(e) {
+    e.preventDefault();
+    if (!editModal.item) return;
+    setProgList(prev => prev.map(p => {
+      if (p.id === editModal.item.id) {
+        return { ...p, ...editModal.formData };
+      }
+      return p;
+    }));
+    setToast(`Updated program ${editModal.item.id}`);
+    setEditModal({ open: false, item: null, formData: {} });
   }
 
   function handleExport() {
@@ -164,22 +276,23 @@ export default function ProgramsPage() {
                 { key: 'progress', label: 'Progress' },
                 { key: 'owner', label: 'Owner' },
                 { key: 'status', label: 'Status' },
+                { key: 'actions', label: 'Actions' },
               ].map(col => (
                 <th
                   key={col.key}
-                  onClick={() => toggleSort(col.key)}
+                  onClick={() => col.key !== 'actions' && toggleSort(col.key)}
                   style={{
-                    textAlign: 'left',
+                    textAlign: col.key === 'actions' ? 'center' : 'left',
                     fontSize: 11,
                     textTransform: 'uppercase',
                     color: 'var(--muted)',
                     padding: '10px 14px',
                     borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer',
+                    cursor: col.key === 'actions' ? 'default' : 'pointer',
                   }}
                 >
                   {col.label}
-                  {sort.key === col.key && (
+                  {sort.key === col.key && col.key !== 'actions' && (
                     <span style={{ marginLeft: 4 }}>{sort.direction === 'asc' ? '▲' : '▼'}</span>
                   )}
                 </th>
@@ -197,6 +310,9 @@ export default function ProgramsPage() {
                   <td style={{ padding: '12px 14px' }}><ProgressBar value={p.progress} color={progressColor[p.status]} width={90} /></td>
                   <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--muted)' }}>{p.owner}</td>
                   <td style={{ padding: '12px 14px' }}><StatusBadge color={s.color}>{s.label}</StatusBadge></td>
+                  <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                    <ActionsDropdown item={p} currentUserRole={currentUser.role} currentUserName={currentUser.name} onAction={handleAction} />
+                  </td>
                 </tr>
               );
             })}
@@ -263,6 +379,57 @@ export default function ProgramsPage() {
             <Btn primary style={{ padding: '6px 16px' }} type="submit">Create Program</Btn>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Program Modal */}
+      <Modal open={editModal.open} title="Edit Program" onClose={() => setEditModal(prev => ({ ...prev, open: false }))}>
+        {editModal.item && (
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Program ID</label>
+                <input name="id" value={editModal.formData.id} disabled style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: 13 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Name</label>
+                <input name="name" value={editModal.formData.name} onChange={handleEditFormChange} required style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Phase</label>
+                <select name="phase" value={editModal.formData.phase} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }}>
+                  <option value="R&D">R&D</option>
+                  <option value="NPI">NPI</option>
+                  <option value="Production">Production</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Status</label>
+                <select name="status" value={editModal.formData.status} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }}>
+                  <option value="on-track">On Track</option>
+                  <option value="at-risk">At Risk</option>
+                  <option value="in-design">In Design</option>
+                  <option value="delayed">Delayed</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Owner</label>
+                <input name="owner" value={editModal.formData.owner} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Site</label>
+                <input name="site" value={editModal.formData.site} onChange={handleEditFormChange} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 13 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+              <Btn onClick={() => setEditModal(prev => ({ ...prev, open: false }))} style={{ padding: '6px 14px' }}>Cancel</Btn>
+              <Btn primary style={{ padding: '6px 16px' }} type="submit">Save Changes</Btn>
+            </div>
+          </form>
+        )}
       </Modal>
       <GlobalFilterModal 
         open={showFilter} 
